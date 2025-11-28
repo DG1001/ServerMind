@@ -23,27 +23,27 @@ bot = commands.Bot(command_prefix="!", intents=intents)
 
 @bot.event
 async def on_ready():
-    print(f"🤖 AI Host ist online als {bot.user}")
+    print(f"🤖 AI Host is online as {bot.user}")
 
 
 @bot.command(name="do")
 async def do_task(ctx, *, task):
     """
-    Nimmt den Befehl, packt die Instruktionen dazu und feuert ab.
+    Takes the command, adds instructions, and executes.
     """
-    await ctx.send(f"🫡 Verstanden: `{task}`. Ich arbeite dran...")
+    await ctx.send(f"🫡 Understood: `{task}`. Working on it...")
 
-    # Wir bauen den Prompt zusammen:
-    # Instruktionen + User Task
-    # Hinweis: Viele Tools lesen CLAUDE.md automatisch, wenn es im Ordner liegt.
-    # Wir gehen hier auf Nummer sicher und übergeben es explizit oder vertrauen auf CWD.
+    # Build the prompt:
+    # Instructions + User Task
+    # Note: Many tools auto-read CLAUDE.md when it's in the directory.
+    # We trust CWD or can explicitly pass context files if needed.
 
     command = [
         CLAUDE_CLI_PATH,  # Claude CLI path from config
         "-p",
-        task,  # Der Prompt
-        "--dangerously-skip-permissions",  # Der YOLO Mode (Syntax variiert je nach Tool version)
-        # Ggf. explizit Kontext files angeben, falls das Tool das braucht:
+        task,  # The prompt
+        "--dangerously-skip-permissions",  # YOLO mode (syntax varies by tool version)
+        # Optionally specify context files explicitly if needed:
         # "--context", "host.md", "CLAUDE.md"
     ]
 
@@ -54,7 +54,7 @@ async def do_task(ctx, *, task):
             cwd=WORKDIR,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
-            env={**os.environ, "NO_COLOR": "1"},  # Keine Farbcodes für Discord
+            env={**os.environ, "NO_COLOR": "1"},  # No color codes for Discord
         )
 
         try:
@@ -69,14 +69,14 @@ async def do_task(ctx, *, task):
         output = stdout.decode("utf-8", errors="replace")
         error = stderr.decode("utf-8", errors="replace")
 
-        # Kombinierter Output
+        # Combined output
         full_response = output
         if error:
             full_response += f"\n\n⚠️ STDERR:\n{error}"
 
-        # Discord Limit Check (2000 Zeichen)
+        # Discord Limit Check (2000 characters)
         if len(full_response) > MAX_OUTPUT_LENGTH:
-            # Splitten oder Datei senden
+            # Split or send as file
             summary = (
                 full_response[:TRUNCATE_LENGTH] + "\n... [Output truncated, see file]"
             )
@@ -84,20 +84,21 @@ async def do_task(ctx, *, task):
                 f.write(full_response)
 
             await ctx.send(
-                f"✅ Fertig:\n```\n{summary}\n```",
+                f"✅ Done:\n{summary}",
                 file=discord.File(f"{WORKDIR}/last_output.txt"),
             )
         else:
             if not full_response.strip():
-                full_response = "Task erledigt (Kein Output)."
-            await ctx.send(f"✅ Fertig:\n```\n{full_response}\n```")
+                full_response = "Task completed (no output)."
+            # Send without code blocks to allow Discord markdown rendering
+            await ctx.send(f"✅ Done:\n{full_response}")
 
     except subprocess.TimeoutExpired:
         await ctx.send(
-            f"⏰ Timeout: Der Agent hat länger als {CLAUDE_TIMEOUT / 60:.0f} Min gebraucht. Prüfe den Server manuell."
+            f"⏰ Timeout: The agent took longer than {CLAUDE_TIMEOUT / 60:.0f} min. Check the server manually."
         )
     except Exception as e:
-        await ctx.send(f"💥 Interner Fehler: {str(e)}")
+        await ctx.send(f"💥 Internal error: {str(e)}")
 
 
 bot.run(DISCORD_TOKEN)
