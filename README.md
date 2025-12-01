@@ -24,6 +24,18 @@ This bot allows you to control a server via Discord commands, delegating tasks t
   - `!do update the system and install nginx`
   - `!do check disk usage and clean up logs`
 
+## Example in Action
+
+![Security Report Example](screen.png)
+
+In this example, the bot detected and reported on a real security incident:
+- **Task**: Check system health and logs for unusual access attempts
+- **Result**: Identified 5 malicious IPs attempting brute force attacks targeting common usernames (root, admin, sol, solana, user)
+- **Outcome**: All attacks blocked successfully, comprehensive security report generated
+- **System Health**: Performance metrics, service status, and network analysis included
+
+The bot autonomously analyzed logs, identified the threat pattern (username enumeration + password spraying), and confirmed that all attacks were blocked with no successful compromises.
+
 ## How It Works
 
 1. You send a command via Discord (`!do <task>`)
